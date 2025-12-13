@@ -45,6 +45,7 @@ def parse_artist_info(html_content: str, artist: Artist, limit_albums: int = 10)
      log_service.log_info("Parsing artist info from HTML content...")
      
      try:
+        
           table_element = soup.find(class_=re.compile(r"^table_"))
           tbody = table_element.find("tbody")
      except Exception as e:
@@ -55,6 +56,7 @@ def parse_artist_info(html_content: str, artist: Artist, limit_albums: int = 10)
      
      try:
           members_row = tbody.select_one("tr:has(th h2:contains('Members'))")
+
 
           if members_row:
                members_td = members_row.find("td")
@@ -83,6 +85,7 @@ def parse_artist_info(html_content: str, artist: Artist, limit_albums: int = 10)
           raise e
 
 
+  
      log_service.log_info("Parsing sites from artist info...")
      try: 
           sites_row = tbody.select_one("tr:has(th h2:contains('Sites'))")
@@ -104,20 +107,21 @@ def parse_artist_info(html_content: str, artist: Artist, limit_albums: int = 10)
           raise e
 
   
-          
-     
      try:
           album_info_elements = soup.find('table', class_=re.compile(r"^releases_")) \
                .find('tbody') \
                .find_all('tr')
+          
              
           log_service.log_info(f"Parsing album from {artist.name}'s discography...")
           album_list: List[Album] = list()
           for album_tr_element in album_info_elements:
 
                a = album_tr_element.find('td', class_=re.compile(r"^title_")) \
-                    .find('a', href=re.compile(r'^(/[\w]+)?/(master|release)/\d+-'))      
-          
+                    .find('a', href=re.compile(r'^(/[\w]+)?/(master|release)/\d+-')) 
+
+
+      
                href = a.get('href')
                match = re.match(r'^(/[\w]+)?/(master|release)/(\d+)-(.+)$', href)
 
@@ -147,6 +151,9 @@ def parse_artist_info(html_content: str, artist: Artist, limit_albums: int = 10)
      except Exception as e:
           log_service.log_error(f"Error parsing albums for artist {artist.name}: {e}")
           raise e
+     
+
+
 
      return artist
 

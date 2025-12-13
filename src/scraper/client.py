@@ -1,67 +1,82 @@
-
-import time
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
+from playwright.async_api import Page
 from services import log_service
+import asyncio
 
-def fetch_search_page(driver: webdriver.Chrome, url: str, genre: str, wait_time: int = 5, page = 1) -> str:
 
-     log_service.log_info(f"Fetching search page for genre '{genre}' at page {page}...")
+async def fetch_search_page(
+     page: Page,
+     url: str,
+     genre: str,
+     wait_time: int = 5,
+     page_number: int = 1
+) -> str:
+    log_service.log_info(
+        f"Fetching search page for genre '{genre}' at page {page_number}..."
+    )
 
-     driver.get(url)
+    await page.goto(url)
+    log_service.log_info(f"Page loaded for URL: {url}")
 
-     log_service.log_info(f"Page loaded for URL: {url}")
-     
-     header_shadow_root_element = WebDriverWait(driver, 20).until(
-          EC.presence_of_element_located((By.CSS_SELECTOR, "[id^='__header_root_']"))
-     )
+    log_service.log_info("Waiting for header shadow root element to be present...")
 
-     log_service.log_info("Waiting for header shadow root element to be present...")
+    try:
+        header_shadow_root_element = await page.wait_for_selector(
+            "[id^='__header_root_']",
+            timeout=20_000
+        )
 
-     try:
-          header_shadow_root = driver.execute_script("return arguments[0].shadowRoot", header_shadow_root_element)
-         
-          search_link = header_shadow_root.find_element(
-               By.CSS_SELECTOR,
-               "a[data-tracking='explore-all']"
-          )
+        shadow_root = await header_shadow_root_element.evaluate_handle(
+            "el => el.shadowRoot"
+        )
 
-          log_service.log_info("Found search link in header shadow root.")
+        search_link = await shadow_root.query_selector(
+            "a[data-tracking='explore-all']"
+        )
 
-          search_url = f"{search_link.get_attribute('href')}?genre_exact={genre}&page={page}"
-          # esperar pagina carregar
-          driver.get(search_url)
-          time.sleep(wait_time)
-          log_service.log_info(f"Search page loaded for genre '{genre}' at page {page}.")
-        
-     except Exception as e:
-          log_service.log_error(f"Error while fetching search page: {e}")
-          raise e
-     
-     page_source = driver.page_source
-     
-     log_service.log_info(f"Returning page source for genre '{genre}' at page {page}.")
+        log_service.log_info("Found search link in header shadow root.")
 
-     return page_source
+        href = await search_link.get_attribute("href")
+        search_url = f"{url}{href}?genre_exact={genre}&page={page_number}"
 
-def fetch_artist_page(driver: webdriver.Chrome, artist_url: str, wait_time: int = 5) -> str:     
-     log_service.log_info(f"Fetching artist page for URL: {artist_url}")
+        await page.goto(search_url)
+        await asyncio.sleep(wait_time)
 
-     driver.get(artist_url)
-     time.sleep(wait_time)
+        log_service.log_info(
+            f"Search page loaded for genre '{genre}' at page {page_number}."
+        )
 
-     log_service.log_info(f"Artist page loaded for URL: {artist_url}")
+    except Exception as e:
+        log_service.log_error(f"Error while fetching search page: {e}")
+        raise
 
-     page_source = driver.page_source
-     return page_source
+    page_source = await page.content()
 
-def fetch_album_page(driver: webdriver.Chrome, album_url: str, wait_time: int = 5) -> str:
-     log_service.log_info(f"Fetching album page for URL: {album_url}")
+    log_service.log_info(
+        f"Returning page source for genre '{genre}' at page {page_number}."
+    )
 
-     driver.get(album_url)
-     time.sleep(wait_time)
-     log_service.log_info(f"Album page loaded for URL: {album_url}")
-     page_source = driver.page_source
-     return page_source
+    return page_source
+
+
+async def fetch_artist_page(page: Page, artist_url: str) -> str:
+    """Busca página de artista do Discogs."""
+    log_service.log_info(f"Fetching artist page for URL: {artist_url}")
+
+    await page.goto(artist_url, wait_until='domcontentloaded', timeout=60000)
+    await page.wait_for_selector('[class*="releases_"]', timeout=30000)
+    log_service.log_info(f"Artist page loaded for URL: {artist_url}")
+
+    content = await page.content()
+
+    return content
+
+
+async def fetch_album_page(page: Page, album_url: str) -> str:
+    """Busca página de álbum do Discogs."""
+    log_service.log_info(f"Fetching album page for URL: {album_url}")
+
+    await page.goto(album_url, wait_until='domcontentloaded', timeout=60000)
+    log_service.log_info(f"Album page loaded for URL: {album_url}")
+
+    content = await page.content()
+    return content
