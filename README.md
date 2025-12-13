@@ -1,56 +1,85 @@
 # Discogs Scraper
 
-Este repositório contém um scraper para coletar informações de artistas e álbuns do Discogs.
+Scraper para coletar informações de artistas e álbuns do Discogs usando Playwright (Chromium).
 
-**Pré-requisitos**
-- Python 3.10+ instalado no sistema
-- Google Chrome instalado (para o Selenium)
+## Pré-requisitos
 
-**Observação:** o projeto usa Selenium; o ChromeDriver é gerenciado automaticamente em versões recentes do Selenium, mas em alguns sistemas pode ser necessário instalar um `chromedriver` compatível ou ajustar o `PATH`.
+- Python 3.10+ instalado
+- Playwright instalado e navegadores preparados (Chromium)
 
-**Uso rápido**
-- Clone o repositório e entre na pasta do projeto.
+> Observação: o projeto foi migrado de Selenium para Playwright. É necessário instalar o pacote `playwright` e baixar o Chromium gerenciado.
 
-**Criar e ativar um ambiente virtual (Windows PowerShell)**
+## Uso no Windows (PowerShell)
 
-- Criar o venv:
+1) Criar e ativar o ambiente virtual
 
-	`py -3 -m venv .\venv`
+```powershell
+py -3 -m venv .\venv
+& .\venv\Scripts\Activate.ps1
+```
 
-- Ativar o venv:
+2) Instalar dependências e preparar Playwright
 
-	`& .\venv\Scripts\Activate.ps1`
+```powershell
+& .\venv\Scripts\python.exe -m pip install -r requirements.txt
+& .\venv\Scripts\python.exe -m playwright install chromium
+```
 
-**Instalar dependências**
+3) Executar o scraper
 
-- Instalar a partir do `requirements.txt`:
+```powershell
+& .\venv\Scripts\python.exe -m src.main
+```
 
-	`& .\venv\Scripts\python.exe -m pip install -r requirements.txt`
+Observações:
+- Por padrão o scraper salva em `./data/discogs_scraper.jsonl`.
+- Para modo headless, ajuste o `headless` no lançamento do navegador (veja `src/main.py`).
 
-**Executar o scraper**
+4) Rodar os testes
 
-- Rodar o script principal (exemplo):
+```powershell
+& .\venv\Scripts\python.exe -m pytest -q
+```
 
-	`& .\venv\Scripts\python.exe -m src.main`
+## Uso no Ubuntu
 
-- Observações:
-	- Por padrão o scraper cria um arquivo `./data/discogs_scraper.jsonl` com os resultados.
-	- Se você quiser ver as janelas do navegador, verifique a função `get_driver()` em `src/services/selenium_service.py` — remova a flag `--headless` se for adicionada, ou chame a função com um parâmetro que controle o modo headless.
+1) Dependências do sistema
 
-**Rodar os testes**
+```bash
+sudo apt update
+sudo apt install -y python3 python3-venv python3-pip
+```
 
-- Executar todos os testes:
+2) Criar e ativar o ambiente virtual
 
-	`& .\venv\Scripts\python.exe -m pytest -q`
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+```
 
-- Executar um teste específico (ex.: teste do parser de álbum):
+3) Instalar dependências e preparar Playwright
 
-	`& .\venv\Scripts\python.exe -m pytest tests/test_parser.py::test_parse_album_info_tracks_styles_and_year -q`
+```bash
+python -m pip install -r requirements.txt
+python -m playwright install chromium
+```
 
-**Estrutura do projeto (resumida)**
-- `src/` — código fonte do scraper
-	- `scraper/` — cliente, parser e modelos
-	- `services/` — utilitários e criação do driver Selenium
+4) Executar o scraper
+
+```bash
+python -m src.main
+```
+
+5) Rodar os testes
+
+```bash
+pytest -q
+```
+
+## Estrutura do projeto
+
+- `src/` — código fonte
+  - `scraper/` — cliente (Playwright), parser e modelos
+  - `services/` — utilitários e gerenciamento do navegador Playwright
 - `tests/` — testes unitários e fixtures
-- `requirements.txt` — dependências do projeto
-
+- `requirements.txt` — dependências
